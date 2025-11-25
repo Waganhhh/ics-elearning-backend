@@ -69,4 +69,14 @@ export class UsersController {
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
+
+  @Get('debug/:email')
+  async debugUser(@Param('email') email: string) {
+    return this.usersService.debugUserByEmail(email);
+  }
+
+  @Post('activate/:email')
+  async activateUser(@Param('email') email: string) {
+    return this.usersService.activateUserByEmail(email);
+  }
 }

@@ -98,4 +98,48 @@ export class UsersService {
 
     return null;
   }
+
+  async debugUserByEmail(email: string) {
+    const user = await this.usersRepository.findOne({ where: { email } });
+    if (!user) {
+      return { found: false, message: 'User not found' };
+    }
+
+    return {
+      found: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        status: user.status,
+        emailVerified: user.emailVerified,
+        emailVerifiedAt: user.emailVerifiedAt,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      }
+    };
+  }
+
+  async activateUserByEmail(email: string) {
+    const user = await this.usersRepository.findOne({ where: { email } });
+    if (!user) {
+      return { success: false, message: 'User not found' };
+    }
+
+    user.status = UserStatus.ACTIVE;
+    user.emailVerified = true;
+    user.emailVerifiedAt = new Date();
+    await this.usersRepository.save(user);
+
+    return {
+      success: true,
+      message: 'User activated successfully',
+      user: {
+        email: user.email,
+        status: user.status,
+        emailVerified: user.emailVerified,
+      }
+    };
+  }
 }
