@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User, UserStatus } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {
@@ -89,10 +90,13 @@ export class UsersService {
     });
 
     if (user && user.passwordResetExpires && user.passwordResetExpires > new Date()) {
-      user.password = newPassword;
+      // Hash the new password manually
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+      
+      user.password = hashedPassword;
       user.passwordResetToken = null;
       user.passwordResetExpires = null;
-      await user.hashPassword();
+      
       return await this.usersRepository.save(user);
     }
 

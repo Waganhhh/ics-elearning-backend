@@ -79,7 +79,7 @@ export class EmailService {
   }
 
   async sendPasswordResetEmail(email: string, token: string) {
-    const resetUrl = `${this.configService.get('FRONTEND_URL')}/auth/reset-password?token=${token}`;
+    const resetUrl = `${this.configService.get('FRONTEND_URL')}/reset-password?token=${token}`;
 
     const mailOptions = {
       from: this.configService.get('SMTP_FROM'),
