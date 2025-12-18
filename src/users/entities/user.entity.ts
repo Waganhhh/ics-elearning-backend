@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   BeforeInsert,
+  OneToMany,
 } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 
@@ -83,6 +84,12 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @OneToMany(() => require('../../courses/entities/course.entity').Course, (course: any) => course.teacher)
+  courses: any[];
+
+  @OneToMany(() => require('../../enrollments/entities/enrollment.entity').Enrollment, (enrollment: any) => enrollment.student)
+  enrollments: any[];
 
   @BeforeInsert()
   async hashPassword() {
