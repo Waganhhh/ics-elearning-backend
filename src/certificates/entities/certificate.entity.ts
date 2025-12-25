@@ -53,6 +53,15 @@ export class Certificate {
   @Column({ type: 'simple-json', nullable: true })
   metadata: any; // Additional certificate data
 
+  @Column({ default: 'approved' })
+  status: string; // approved, pending, rejected
+
+  @Column({ type: 'text', nullable: true })
+  rejectionReason: string;
+
+  @Column({ nullable: true })
+  shareId: string; // For public sharing
+
   @CreateDateColumn()
   createdAt: Date;
 

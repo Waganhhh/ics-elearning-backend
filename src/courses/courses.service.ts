@@ -10,12 +10,16 @@ import { Course, CourseStatus } from './entities/course.entity';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { User, UserRole } from '../users/entities/user.entity';
+import { CourseFilters, FilterOption, PriceRange } from './dto/course-filters.dto';
+import { Category } from '../categories/entities/category.entity';
 
 @Injectable()
 export class CoursesService {
   constructor(
     @InjectRepository(Course)
     private readonly courseRepository: Repository<Course>,
+    @InjectRepository(Category)
+    private readonly categoryRepository: Repository<Category>,
   ) {}
 
   async create(createCourseDto: CreateCourseDto, teacher: User): Promise<Course> {
@@ -173,6 +177,156 @@ export class CoursesService {
 
   async incrementEnrollmentCount(courseId: string): Promise<void> {
     await this.courseRepository.increment({ id: courseId }, 'enrollmentCount', 1);
+  }
+
+  async findByStatus(status: string): Promise<Course[]> {
+    return this.courseRepository.find({
+      where: { status: status as any },
+      relations: ['teacher', 'category'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async approveCourse(id: string): Promise<Course> {
+    const course = await this.findOne(id);
+    course.status = 'published' as any;
+    return this.courseRepository.save(course);
+  }
+
+  async rejectCourse(id: string, reason: string): Promise<Course> {
+    const course = await this.findOne(id);
+    course.status = 'rejected' as any;
+    course.rejectionReason = reason;
+    return this.courseRepository.save(course);
+  }
+
+  async submitForApproval(id: string, user: User): Promise<Course> {
+    const course = await this.findOne(id);
+
+    if (course.teacherId !== user.id && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('You can only submit your own courses');
+    }
+
+    course.status = 'pending' as any;
+    return this.courseRepository.save(course);
+  }
+
+  async getAvailableFilters(): Promise<CourseFilters> {
+    // Get categories with course counts
+    const categoriesData = await this.categoryRepository
+      .createQueryBuilder('category')
+      .leftJoin('category.courses', 'course')
+      .select('category.id', 'value')
+      .addSelect('category.name', 'label')
+      .addSelect('COUNT(course.id)', 'count')
+      .where('course.isPublished = :published', { published: true })
+      .groupBy('category.id')
+      .addGroupBy('category.name')
+      .orderBy('count', 'DESC')
+      .getRawMany();
+
+    const categories: FilterOption[] = categoriesData.map(c => ({
+      value: c.value,
+      label: c.label,
+      count: parseInt(c.count) || 0,
+    }));
+
+    // Get levels with counts
+    const levelsData = await this.courseRepository
+      .createQueryBuilder('course')
+      .select('course.level', 'value')
+      .addSelect('course.level', 'label')
+      .addSelect('COUNT(*)', 'count')
+      .where('course.isPublished = :published', { published: true })
+      .groupBy('course.level')
+      .getRawMany();
+
+    const levels: FilterOption[] = levelsData.map(l => ({
+      value: l.value,
+      label: this.formatLevel(l.value),
+      count: parseInt(l.count) || 0,
+    }));
+
+    // Get price ranges
+    const priceRanges: PriceRange[] = [
+      { min: 0, max: 0, label: 'Free', count: 0 },
+      { min: 1, max: 500000, label: 'Under 500K', count: 0 },
+      { min: 500000, max: 1000000, label: '500K - 1M', count: 0 },
+      { min: 1000000, max: 2000000, label: '1M - 2M', count: 0 },
+      { min: 2000000, max: 999999999, label: 'Over 2M', count: 0 },
+    ];
+
+    for (const range of priceRanges) {
+      const count = await this.courseRepository
+        .createQueryBuilder('course')
+        .where('course.isPublished = :published', { published: true })
+        .andWhere('course.price >= :min', { min: range.min })
+        .andWhere('course.price < :max', { max: range.max === 0 ? 1 : range.max })
+        .getCount();
+      
+      range.count = count;
+    }
+
+    // Get languages with counts
+    const languagesData = await this.courseRepository
+      .createQueryBuilder('course')
+      .select('course.language', 'value')
+      .addSelect('course.language', 'label')
+      .addSelect('COUNT(*)', 'count')
+      .where('course.isPublished = :published', { published: true })
+      .groupBy('course.language')
+      .getRawMany();
+
+    const languages: FilterOption[] = languagesData.map(l => ({
+      value: l.value,
+      label: this.formatLanguage(l.value),
+      count: parseInt(l.count) || 0,
+    }));
+
+    // Get rating ranges
+    const ratings: FilterOption[] = [
+      { value: '4.5', label: '4.5 & up', count: 0 },
+      { value: '4.0', label: '4.0 & up', count: 0 },
+      { value: '3.5', label: '3.5 & up', count: 0 },
+      { value: '3.0', label: '3.0 & up', count: 0 },
+    ];
+
+    for (const rating of ratings) {
+      const count = await this.courseRepository
+        .createQueryBuilder('course')
+        .where('course.isPublished = :published', { published: true })
+        .andWhere('course.rating >= :rating', { rating: parseFloat(rating.value) })
+        .getCount();
+      
+      rating.count = count;
+    }
+
+    return {
+      categories,
+      levels,
+      priceRanges,
+      languages,
+      ratings,
+    };
+  }
+
+  private formatLevel(level: string): string {
+    const levels = {
+      beginner: 'Beginner',
+      intermediate: 'Intermediate',
+      advanced: 'Advanced',
+      'all-levels': 'All Levels',
+    };
+    return levels[level] || level;
+  }
+
+  private formatLanguage(language: string): string {
+    const languages = {
+      en: 'English',
+      vi: 'Vietnamese',
+      'vi-en': 'Vietnamese & English',
+    };
+    return languages[language] || language;
   }
 
   private generateSlug(title: string): string {

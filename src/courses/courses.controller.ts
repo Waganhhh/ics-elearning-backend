@@ -8,7 +8,9 @@ import {
   Delete,
   UseGuards,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
@@ -34,12 +36,23 @@ export class CoursesController {
     return this.coursesService.findAll(search, categoryId);
   }
 
+  @Get('filters')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(600000) // Cache for 10 minutes
+  getFilters() {
+    return this.coursesService.getAvailableFilters();
+  }
+
   @Get('featured')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(300000) // Cache for 5 minutes
   findFeatured() {
     return this.coursesService.findFeatured();
   }
 
   @Get('bestsellers')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(300000) // Cache for 5 minutes
   findBestsellers() {
     return this.coursesService.findBestsellers();
   }
@@ -82,5 +95,35 @@ export class CoursesController {
   @Roles(UserRole.TEACHER, UserRole.ADMIN)
   remove(@Param('id') id: string, @GetUser() user: User) {
     return this.coursesService.remove(id, user);
+  }
+
+  // Admin endpoints
+  @Get('admin/pending')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  findPending() {
+    return this.coursesService.findByStatus('pending');
+  }
+
+  @Patch(':id/approve')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  approve(@Param('id') id: string) {
+    return this.coursesService.approveCourse(id);
+  }
+
+  @Patch(':id/reject')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  reject(@Param('id') id: string, @Body('reason') reason: string) {
+    return this.coursesService.rejectCourse(id, reason);
+  }
+
+  // Teacher endpoints
+  @Patch(':id/submit')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.TEACHER)
+  submit(@Param('id') id: string, @GetUser() user: User) {
+    return this.coursesService.submitForApproval(id, user);
   }
 }

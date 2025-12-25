@@ -1,6 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { CacheModule } from '@nestjs/cache-manager';
+import { APP_GUARD } from '@nestjs/core';
+import { join } from 'path';
 import configuration from './config/configuration';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -25,6 +30,11 @@ import { AssignmentsModule } from './assignments/assignments.module';
 import { ResourcesModule } from './resources/resources.module';
 import { CartModule } from './cart/cart.module';
 import { CouponsModule } from './coupons/coupons.module';
+import { AdminModule } from './admin/admin.module';
+import { TeacherModule } from './teacher/teacher.module';
+import { ProgressModule } from './progress/progress.module';
+import { StatsModule } from './stats/stats.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -32,6 +42,35 @@ import { CouponsModule } from './coupons/coupons.module';
       isGlobal: true,
       load: [configuration],
       envFilePath: '.env',
+    }),
+    // Rate limiting
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000, // 1 second
+        limit: 10, // 10 requests per second
+      },
+      {
+        name: 'medium',
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute
+      },
+      {
+        name: 'long',
+        ttl: 900000, // 15 minutes
+        limit: 1000, // 1000 requests per 15 minutes
+      },
+    ]),
+    // Static file serving for uploads
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
+    }),
+    // Cache configuration
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 300000, // 5 minutes default TTL
+      max: 100, // Maximum number of items in cache
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -75,8 +114,20 @@ import { CouponsModule } from './coupons/coupons.module';
     ResourcesModule,
     CartModule,
     CouponsModule,
+    AdminModule,
+    TeacherModule,
+    ProgressModule,
+    StatsModule,
+    UploadModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Apply rate limiting globally
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

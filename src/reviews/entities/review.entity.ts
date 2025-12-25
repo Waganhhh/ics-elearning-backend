@@ -44,6 +44,12 @@ export class Review {
   @Column({ default: true })
   isPublished: boolean;
 
+  @Column({ type: 'text', nullable: true })
+  teacherReply: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  repliedAt: Date;
+
   @CreateDateColumn()
   createdAt: Date;
 

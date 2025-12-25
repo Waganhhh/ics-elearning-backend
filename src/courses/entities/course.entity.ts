@@ -72,6 +72,9 @@ export class Course {
   })
   status: CourseStatus;
 
+  @Column({ type: 'text', nullable: true })
+  rejectionReason: string;
+
   @Column({ default: 0 })
   duration: number; // in minutes
 

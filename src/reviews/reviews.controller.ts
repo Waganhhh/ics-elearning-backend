@@ -7,10 +7,12 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
+import { ReplyReviewDto } from './dto/reply-review.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -74,5 +76,16 @@ export class ReviewsController {
   @UseGuards(JwtAuthGuard)
   incrementHelpful(@Param('id') id: string) {
     return this.reviewsService.incrementHelpfulCount(id);
+  }
+
+  @Post(':id/reply')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.TEACHER)
+  replyToReview(
+    @Param('id') id: string,
+    @Body() replyDto: ReplyReviewDto,
+    @Req() req: any,
+  ) {
+    return this.reviewsService.replyToReview(id, replyDto.reply, req.user.userId);
   }
 }

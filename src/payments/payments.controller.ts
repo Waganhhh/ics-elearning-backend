@@ -72,10 +72,80 @@ export class PaymentsController {
     return this.paymentsService.findByStudent(user.id);
   }
 
+  // Admin endpoints
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  findAllAdmin(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('status') status?: string,
+    @Query('userId') userId?: string,
+    @Query('courseId') courseId?: string,
+    @Query('teacherId') teacherId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.paymentsService.findAllWithFilters({
+      page: page ? parseInt(page.toString()) : 1,
+      limit: limit ? parseInt(limit.toString()) : 20,
+      status,
+      userId,
+      courseId,
+      teacherId,
+      startDate,
+      endDate,
+      search,
+    });
+  }
+
+  @Get('admin/stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getPaymentStats(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.paymentsService.getPaymentStats(startDate, endDate);
+  }
+
+  @Post('admin/export')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async exportPayments(
+    @Body() filters: any,
+    @Res() res: Response,
+  ) {
+    const csv = await this.paymentsService.exportToCSV(filters);
+    res.header('Content-Type', 'text/csv');
+    res.header('Content-Disposition', 'attachment; filename="payments.csv"');
+    res.send(csv);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string) {
     return this.paymentsService.findOne(id);
+  }
+
+  @Get(':id/invoice')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.STUDENT)
+  async generateInvoice(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Res() res: Response,
+  ) {
+    const pdfBuffer = await this.paymentsService.generateInvoice(id, req.user.userId);
+    
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="invoice-${id}.pdf"`,
+      'Content-Length': pdfBuffer.length,
+    });
+    
+    res.send(pdfBuffer);
   }
 
   @Get('transaction/:transactionId')

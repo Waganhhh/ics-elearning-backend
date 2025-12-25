@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Certificate } from './entities/certificate.entity';
@@ -95,6 +95,63 @@ export class CertificatesService {
     });
 
     return !!certificate;
+  }
+
+  async findPending() {
+    return this.certificateRepository.find({
+      where: { status: 'pending' },
+      relations: ['student', 'course', 'enrollment'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async approveCertificate(id: string) {
+    const certificate = await this.findOne(id);
+    certificate.status = 'approved';
+    return this.certificateRepository.save(certificate);
+  }
+
+  async rejectCertificate(id: string, reason: string) {
+    const certificate = await this.findOne(id);
+    certificate.status = 'rejected';
+    certificate.rejectionReason = reason;
+    return this.certificateRepository.save(certificate);
+  }
+
+  async createShareLink(certificateId: string, userId: string) {
+    const certificate = await this.findOne(certificateId);
+    
+    if (certificate.studentId !== userId) {
+      throw new ForbiddenException('You can only share your own certificates');
+    }
+
+    if (!certificate.shareId) {
+      certificate.shareId = this.generateShareId();
+      await this.certificateRepository.save(certificate);
+    }
+
+    return {
+      shareId: certificate.shareId,
+      shareUrl: `/certificates/public/share/${certificate.shareId}`,
+    };
+  }
+
+  async getSharedCertificate(shareId: string) {
+    const certificate = await this.certificateRepository.findOne({
+      where: { shareId },
+      relations: ['student', 'course'],
+    });
+
+    if (!certificate) {
+      throw new NotFoundException('Shared certificate not found');
+    }
+
+    return certificate;
+  }
+
+  private generateShareId(): string {
+    return Math.random().toString(36).substring(2, 15) + 
+           Math.random().toString(36).substring(2, 15);
   }
 
   private generateCertificateNumber(): string {

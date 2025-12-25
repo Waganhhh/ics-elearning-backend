@@ -143,4 +143,25 @@ export class ReviewsService {
     review.helpfulCount += 1;
     return this.reviewRepository.save(review);
   }
+
+  async replyToReview(reviewId: string, reply: string, teacherId: string): Promise<Review> {
+    const review = await this.reviewRepository.findOne({
+      where: { id: reviewId },
+      relations: ['course', 'course.teacher'],
+    });
+
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    // Verify that the teacher owns the course
+    if (review.course.teacherId !== teacherId) {
+      throw new ForbiddenException('You can only reply to reviews on your own courses');
+    }
+
+    review.teacherReply = reply;
+    review.repliedAt = new Date();
+
+    return this.reviewRepository.save(review);
+  }
 }
