@@ -19,6 +19,12 @@ import { NotesModule } from './notes/notes.module';
 import { WishlistsModule } from './wishlists/wishlists.module';
 import { ExamsModule } from './exams/exams.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AnnouncementsModule } from './announcements/announcements.module';
+import { DiscussionsModule } from './discussions/discussions.module';
+import { AssignmentsModule } from './assignments/assignments.module';
+import { ResourcesModule } from './resources/resources.module';
+import { CartModule } from './cart/cart.module';
+import { CouponsModule } from './coupons/coupons.module';
 
 @Module({
   imports: [
@@ -63,6 +69,12 @@ import { NotificationsModule } from './notifications/notifications.module';
     WishlistsModule,
     ExamsModule,
     NotificationsModule,
+    AnnouncementsModule,
+    DiscussionsModule,
+    AssignmentsModule,
+    ResourcesModule,
+    CartModule,
+    CouponsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

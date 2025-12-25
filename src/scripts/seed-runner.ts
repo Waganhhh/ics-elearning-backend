@@ -14,6 +14,13 @@ import { Payment } from '../payments/entities/payment.entity';
 import { Review } from '../reviews/entities/review.entity';
 import { Note } from '../notes/entities/note.entity';
 import { Wishlist } from '../wishlists/entities/wishlist.entity';
+import { Cart } from '../cart/entities/cart.entity';
+import { Coupon } from '../coupons/entities/coupon.entity';
+import { Announcement } from '../announcements/entities/announcement.entity';
+import { Discussion } from '../discussions/entities/discussion.entity';
+import { Assignment, AssignmentSubmission } from '../assignments/entities/assignment.entity';
+import { Resource } from '../resources/entities/resource.entity';
+import { Notification } from '../notifications/entities/notification.entity';
 
 ConfigModule.forRoot();
 
@@ -34,6 +41,14 @@ const AppDataSource = new DataSource({
     Review,
     Note,
     Wishlist,
+    Cart,
+    Coupon,
+    Announcement,
+    Discussion,
+    Assignment,
+    AssignmentSubmission,
+    Resource,
+    Notification,
   ],
   synchronize: true,
   ssl: {

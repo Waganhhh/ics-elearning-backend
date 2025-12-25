@@ -11,6 +11,13 @@ import { Payment, PaymentStatus, PaymentMethod } from '../payments/entities/paym
 import { Certificate } from '../certificates/entities/certificate.entity';
 import { Note } from '../notes/entities/note.entity';
 import { Wishlist } from '../wishlists/entities/wishlist.entity';
+import { Cart } from '../cart/entities/cart.entity';
+import { Coupon, CouponType, CouponStatus } from '../coupons/entities/coupon.entity';
+import { Announcement, AnnouncementPriority } from '../announcements/entities/announcement.entity';
+import { Discussion } from '../discussions/entities/discussion.entity';
+import { Assignment, AssignmentStatus, AssignmentSubmission, SubmissionStatus } from '../assignments/entities/assignment.entity';
+import { Resource, ResourceType } from '../resources/entities/resource.entity';
+import { Notification, NotificationType, NotificationStatus } from '../notifications/entities/notification.entity';
 
 export async function seedDatabase(dataSource: DataSource) {
   console.log('🌱 Starting database seed...');
@@ -24,6 +31,14 @@ export async function seedDatabase(dataSource: DataSource) {
   const reviewRepo = dataSource.getRepository(Review);
   const paymentRepo = dataSource.getRepository(Payment);
   const certificateRepo = dataSource.getRepository(Certificate);
+  const cartRepo = dataSource.getRepository(Cart);
+  const couponRepo = dataSource.getRepository(Coupon);
+  const announcementRepo = dataSource.getRepository(Announcement);
+  const discussionRepo = dataSource.getRepository(Discussion);
+  const assignmentRepo = dataSource.getRepository(Assignment);
+  const submissionRepo = dataSource.getRepository(AssignmentSubmission);
+  const resourceRepo = dataSource.getRepository(Resource);
+  const notificationRepo = dataSource.getRepository(Notification);
 
   // Clear existing data
   console.log('🗑️  Clearing existing data...');
@@ -513,6 +528,7 @@ export async function seedDatabase(dataSource: DataSource) {
   // Student enrolls in 8 courses (most of them)
   const enrolledCoursesCount = 8;
   const enrolledCourses = courses.slice(0, enrolledCoursesCount);
+  const enrollments: any[] = [];
 
   for (let courseIndex = 0; courseIndex < enrolledCourses.length; courseIndex++) {
     const course = enrolledCourses[courseIndex];
@@ -547,6 +563,8 @@ export async function seedDatabase(dataSource: DataSource) {
       completedAt: isCompleted ? new Date() : undefined,
       lastAccessedAt: new Date(Date.now() - Math.random() * 3 * 24 * 60 * 60 * 1000), // Last 3 days
     } as any);
+    enrollments.push(enrollment);
+    enrollments.push(enrollment);
 
     // Update course enrollment count
     await courseRepo.increment({ id: course.id }, 'enrollmentCount', 1);
@@ -651,19 +669,226 @@ export async function seedDatabase(dataSource: DataSource) {
     });
   }
 
+  // Create Cart items
+  console.log('🛒 Creating cart items...');
+  const availableCourses = courses.filter(c => !enrollments.find(e => e.courseId === c.id));
+  if (availableCourses.length > 0) {
+    for (let i = 0; i < Math.min(2, availableCourses.length); i++) {
+      await cartRepo.save({
+        userId: student.id,
+        courseId: availableCourses[i].id,
+        price: availableCourses[i].discountPrice || availableCourses[i].price,
+      });
+    }
+  }
+
+  // Create Coupons
+  console.log('🎟️  Creating coupons...');
+  await couponRepo.save([
+    {
+      code: 'WELCOME2024',
+      type: CouponType.PERCENTAGE,
+      value: 20,
+      minPurchase: 500000,
+      maxDiscount: 200000,
+      usageLimit: 100,
+      usedCount: 15,
+      createdBy: admin.id,
+      status: CouponStatus.ACTIVE,
+      validFrom: new Date('2024-01-01'),
+      validUntil: new Date('2024-12-31'),
+    },
+    {
+      code: 'BLACKFRIDAY',
+      type: CouponType.PERCENTAGE,
+      value: 50,
+      minPurchase: 1000000,
+      maxDiscount: 500000,
+      usageLimit: 50,
+      usedCount: 32,
+      createdBy: admin.id,
+      status: CouponStatus.ACTIVE,
+      validFrom: new Date('2024-11-01'),
+      validUntil: new Date('2024-11-30'),
+    },
+    {
+      code: 'FIRSTCOURSE',
+      type: CouponType.FIXED,
+      value: 100000,
+      usageLimit: 500,
+      usedCount: 123,
+      createdBy: admin.id,
+      status: CouponStatus.ACTIVE,
+    },
+    {
+      code: 'TEACHER50',
+      type: CouponType.PERCENTAGE,
+      value: 10,
+      courseId: courses[0].id,
+      usageLimit: 20,
+      usedCount: 5,
+      createdBy: teacher.id,
+      status: CouponStatus.ACTIVE,
+    },
+  ]);
+
+  // Create Announcements
+  console.log('📢 Creating announcements...');
+  for (let i = 0; i < 3; i++) {
+    await announcementRepo.save({
+      title: i === 0 ? 'Chào mừng đến với khóa học!' : i === 1 ? 'Cập nhật nội dung mới' : 'Thông báo quan trọng',
+      content: i === 0 
+        ? 'Chào các bạn! Mình rất vui được đồng hành cùng các bạn trong khóa học này. Hãy tích cực tham gia thảo luận và làm bài tập nhé!'
+        : i === 1
+        ? 'Mình vừa cập nhật thêm 3 bài học mới về advanced topics. Các bạn check out nhé!'
+        : 'Deadline nộp bài tập cuối khóa là ngày 31/12. Các bạn hoàn thành đúng hạn để nhận certificate nhé!',
+      courseId: courses[i % courses.length].id,
+      authorId: teacher.id,
+      priority: i === 2 ? AnnouncementPriority.HIGH : AnnouncementPriority.MEDIUM,
+      isPinned: i === 0,
+      isPublished: true,
+    });
+  }
+
+  // Create Discussions
+  console.log('💬 Creating discussions...');
+  const allLessons = await lessonRepo.find({ take: 10 });
+  for (let i = 0; i < 5; i++) {
+    const discussion = await discussionRepo.save({
+      title: i === 0 ? 'Làm sao để cài đặt môi trường?' : 
+             i === 1 ? 'Best practice khi làm dự án' :
+             i === 2 ? 'Lỗi khi chạy code bài 5' :
+             i === 3 ? 'Gợi ý tài liệu tham khảo thêm' :
+             'Câu hỏi về bài tập cuối khóa',
+      content: 'Chi tiết câu hỏi ở đây...',
+      courseId: courses[i % courses.length].id,
+      lessonId: i > 1 && allLessons[i] ? allLessons[i].id : undefined,
+      authorId: student.id,
+      isPinned: i === 0,
+      isResolved: i < 2,
+    });
+
+    // Add replies
+    if (i < 2) {
+      await discussionRepo.save({
+        title: '',
+        content: 'Mình có thể giúp bạn với vấn đề này. Bạn thử làm theo cách này xem...',
+        courseId: courses[i % courses.length].id,
+        authorId: teacher.id,
+        parentId: discussion.id,
+      });
+    }
+  }
+
+  // Create Assignments
+  console.log('📝 Creating assignments...');
+  const assignments: any[] = [];
+  for (let i = 0; i < 4; i++) {
+    const assignment = await assignmentRepo.save({
+      title: `Bài tập ${i + 1}: ${i === 0 ? 'Thiết lập dự án' : i === 1 ? 'Xây dựng tính năng cơ bản' : i === 2 ? 'Tích hợp API' : 'Hoàn thiện dự án'}`,
+      description: 'Mô tả chi tiết bài tập...',
+      courseId: courses[i % 4].id,
+      lessonId: allLessons[i * 2] ? allLessons[i * 2].id : undefined,
+      createdBy: teacher.id,
+      maxScore: 100,
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      status: AssignmentStatus.PUBLISHED,
+      allowLateSubmission: true,
+      instructions: 'Hướng dẫn làm bài chi tiết ở đây...',
+    });
+    assignments.push(assignment);
+  }
+
+  // Create Assignment Submissions
+  console.log('📤 Creating assignment submissions...');
+  for (let i = 0; i < 3; i++) {
+    await submissionRepo.save({
+      assignmentId: assignments[i].id,
+      studentId: student.id,
+      content: 'Nội dung bài làm của học viên...',
+      attachments: i === 1 ? ['/uploads/submissions/file1.pdf', '/uploads/submissions/screenshot.png'] : undefined,
+      status: i === 0 ? SubmissionStatus.GRADED : i === 1 ? SubmissionStatus.SUBMITTED : SubmissionStatus.NOT_SUBMITTED,
+      score: i === 0 ? 85 : undefined,
+      feedback: i === 0 ? 'Bài làm tốt! Tuy nhiên cần cải thiện phần...' : undefined,
+      gradedBy: i === 0 ? teacher.id : undefined,
+      gradedAt: i === 0 ? new Date() : undefined,
+      submittedAt: i < 2 ? new Date() : undefined,
+    });
+  }
+
+  // Create Resources
+  console.log('📚 Creating resources...');
+  for (let i = 0; i < 6; i++) {
+    await resourceRepo.save({
+      title: i === 0 ? 'Slide bài giảng' :
+             i === 1 ? 'Source code mẫu' :
+             i === 2 ? 'Tài liệu tham khảo' :
+             i === 3 ? 'Video hướng dẫn bổ sung' :
+             i === 4 ? 'Cheat sheet' :
+             'Link tài nguyên hữu ích',
+      description: 'Mô tả tài nguyên...',
+      type: i === 0 || i === 2 ? ResourceType.PDF :
+            i === 1 ? ResourceType.DOCUMENT :
+            i === 3 ? ResourceType.VIDEO :
+            i === 5 ? ResourceType.LINK :
+            ResourceType.OTHER,
+      url: i === 5 ? 'https://example.com/resource' : undefined,
+      filePath: i !== 5 ? `/uploads/resources/file${i}.pdf` : undefined,
+      fileSize: i !== 5 ? 1024000 : undefined,
+      courseId: courses[i % courses.length].id,
+      lessonId: i < 4 && allLessons[i * 2] ? allLessons[i * 2].id : undefined,
+      uploadedBy: teacher.id,
+      isPublic: i < 2,
+    });
+  }
+
+  // Create Notifications
+  console.log('🔔 Creating notifications...');
+  await notificationRepo.save([
+    {
+      userId: student.id,
+      type: NotificationType.SYSTEM_ANNOUNCEMENT,
+      title: 'Khóa học mới được cập nhật',
+      message: 'Giảng viên đã thêm 3 bài học mới cho khóa học bạn đang theo dõi',
+      status: NotificationStatus.UNREAD,
+    },
+    {
+      userId: student.id,
+      type: NotificationType.EXAM_REMINDER,
+      title: 'Bài tập mới',
+      message: 'Bạn có bài tập mới cần hoàn thành trước ngày 31/12',
+      status: NotificationStatus.UNREAD,
+    },
+    {
+      userId: student.id,
+      type: NotificationType.SYSTEM_ANNOUNCEMENT,
+      title: 'Thông báo từ giảng viên',
+      message: 'Giảng viên vừa đăng thông báo quan trọng',
+      status: NotificationStatus.READ,
+      readAt: new Date(),
+    },
+  ]);
+
   console.log('✅ Database seeded successfully!');
-  console.log(`Created:`);
-  console.log(`- ${await userRepo.count()} users (3 accounts as requested)`);
+  console.log('\n📊 Summary:');
+  console.log(`- ${await userRepo.count()} users`);
   console.log(`- ${await categoryRepo.count()} categories`);
   console.log(`- ${await courseRepo.count()} courses`);
   console.log(`- ${await lessonRepo.count()} lessons`);
   console.log(`- ${await enrollmentRepo.count()} enrollments`);
-  console.log(`- ${await lessonProgressRepo.count()} lesson progress records`);
   console.log(`- ${await reviewRepo.count()} reviews`);
   console.log(`- ${await paymentRepo.count()} payments`);
   console.log(`- ${await certificateRepo.count()} certificates`);
   console.log(`- ${await dataSource.getRepository(Note).count()} notes`);
   console.log(`- ${await dataSource.getRepository(Wishlist).count()} wishlist items`);
+  console.log(`- ${await dataSource.getRepository(Cart).count()} cart items`);
+  console.log(`- ${await dataSource.getRepository(Coupon).count()} coupons`);
+  console.log(`- ${await dataSource.getRepository(Announcement).count()} announcements`);
+  console.log(`- ${await dataSource.getRepository(Discussion).count()} discussions`);
+  console.log(`- ${await dataSource.getRepository(Assignment).count()} assignments`);
+  console.log(`- ${await dataSource.getRepository(AssignmentSubmission).count()} submissions`);
+  console.log(`- ${await dataSource.getRepository(Resource).count()} resources`);
+  console.log(`- ${await dataSource.getRepository(Notification).count()} notifications`);
 }
 
 function getLessonTitle(index: number, courseTitle: string): string {
