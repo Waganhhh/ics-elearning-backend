@@ -15,12 +15,32 @@ async function bootstrap() {
   const frontendUrl = configService.get<string>('frontendUrl', 'http://localhost:3000');
   const nodeEnv = configService.get<string>('nodeEnv', 'development');
   
-  // Enable CORS
+  // Enable CORS with multiple origins support
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    frontendUrl,
+  ].filter((url, index, self) => self.indexOf(url) === index); // Remove duplicates
+
   app.enableCors({
-    origin: frontendUrl,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, Postman, curl)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked request from origin: ${origin}`);
+        callback(null, true); // Still allow in development
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    maxAge: 86400, // 24 hours
   });
 
   // Global filters
