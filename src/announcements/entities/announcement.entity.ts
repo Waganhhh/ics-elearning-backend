@@ -6,6 +6,7 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Course } from '../../courses/entities/course.entity';
@@ -28,9 +29,11 @@ export class Announcement {
   @Column({ type: 'text' })
   content: string;
 
+  @Index()
   @Column({ name: 'course_id', nullable: true })
   courseId: string;
 
+  @Index()
   @Column({ name: 'author_id' })
   authorId: string;
 
@@ -41,9 +44,11 @@ export class Announcement {
   })
   priority: AnnouncementPriority;
 
+  @Index()
   @Column({ name: 'is_pinned', default: false })
   isPinned: boolean;
 
+  @Index()
   @Column({ name: 'is_published', default: true })
   isPublished: boolean;
 

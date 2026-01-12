@@ -6,11 +6,13 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Enrollment } from '../../enrollments/entities/enrollment.entity';
 import { Lesson } from '../../lessons/entities/lesson.entity';
 
 @Entity('lesson_progress')
+@Index(['enrollmentId', 'lessonId'], { unique: true })
 export class LessonProgress {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -20,13 +22,15 @@ export class LessonProgress {
   enrollment: Enrollment;
 
   @Column()
+  @Index()
   enrollmentId: string;
 
-  @ManyToOne(() => Lesson, (lesson) => lesson.progress)
+  @ManyToOne(() => Lesson, (lesson) => lesson.progress, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'lessonId' })
   lesson: Lesson;
 
   @Column()
+  @Index()
   lessonId: string;
 
   @Column({ default: false })
@@ -35,7 +39,7 @@ export class LessonProgress {
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   progress: number; // 0-100
 
-  @Column({ default: 0 })
+  @Column({ type: 'int', default: 0 })
   lastPosition: number; // Last video position in seconds
 
   @Column({ type: 'timestamp', nullable: true })

@@ -7,10 +7,17 @@ import {
   OneToOne,
   JoinColumn,
   ManyToOne,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Course } from '../../courses/entities/course.entity';
 import { Enrollment } from '../../enrollments/entities/enrollment.entity';
+
+export enum CertificateStatus {
+  APPROVED = 'approved',
+  PENDING = 'pending',
+  REJECTED = 'rejected',
+}
 
 @Entity('certificates')
 export class Certificate {
@@ -20,25 +27,28 @@ export class Certificate {
   @Column({ unique: true })
   certificateNumber: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'studentId' })
   student: User;
 
   @Column()
+  @Index()
   studentId: string;
 
-  @ManyToOne(() => Course)
+  @ManyToOne(() => Course, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'courseId' })
   course: Course;
 
   @Column()
+  @Index()
   courseId: string;
 
-  @OneToOne(() => Enrollment, (enrollment) => enrollment.certificate)
+  @OneToOne(() => Enrollment, (enrollment) => enrollment.certificate, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'enrollmentId' })
   enrollment: Enrollment;
 
   @Column()
+  @Index()
   enrollmentId: string;
 
   @Column({ type: 'timestamp' })
@@ -53,8 +63,12 @@ export class Certificate {
   @Column({ type: 'simple-json', nullable: true })
   metadata: any; // Additional certificate data
 
-  @Column({ default: 'approved' })
-  status: string; // approved, pending, rejected
+  @Column({
+    type: 'enum',
+    enum: CertificateStatus,
+    default: CertificateStatus.APPROVED,
+  })
+  status: CertificateStatus;
 
   @Column({ type: 'text', nullable: true })
   rejectionReason: string;

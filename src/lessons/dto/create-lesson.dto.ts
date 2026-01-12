@@ -1,11 +1,12 @@
 import {
   IsString,
   IsOptional,
-  IsNumber,
+  IsInt,
   IsEnum,
   IsArray,
   IsBoolean,
   IsNotEmpty,
+  IsUUID,
   Min,
 } from 'class-validator';
 import { LessonType } from '../entities/lesson.entity';
@@ -31,7 +32,7 @@ export class CreateLessonDto {
   @IsOptional()
   videoThumbnail?: string;
 
-  @IsNumber()
+  @IsInt()
   @Min(0)
   @IsOptional()
   duration?: number;
@@ -44,7 +45,7 @@ export class CreateLessonDto {
   @IsOptional()
   resources?: any[];
 
-  @IsNumber()
+  @IsInt()
   @IsOptional()
   order?: number;
 
@@ -56,7 +57,7 @@ export class CreateLessonDto {
   @IsOptional()
   isPublished?: boolean;
 
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   courseId: string;
 }

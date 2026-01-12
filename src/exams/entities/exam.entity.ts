@@ -7,6 +7,7 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Course } from '../../courses/entities/course.entity';
 import { User } from '../../users/entities/user.entity';
@@ -51,6 +52,7 @@ export class Exam {
   })
   type: ExamType;
 
+  @Index()
   @Column({
     type: 'enum',
     enum: ExamStatus,
@@ -61,7 +63,7 @@ export class Exam {
   @Column({ type: 'simple-json' })
   questions: ExamQuestion[];
 
-  @Column({ default: 60 })
+  @Column({ type: 'int', default: 60 })
   timeLimit: number; // Thời gian làm bài (phút)
 
   @Column({ default: 70 })
@@ -87,6 +89,7 @@ export class Exam {
   @JoinColumn({ name: 'courseId' })
   course: Course;
 
+  @Index()
   @Column()
   courseId: string;
 
@@ -94,6 +97,7 @@ export class Exam {
   @JoinColumn({ name: 'teacherId' })
   teacher: User;
 
+  @Index()
   @Column()
   teacherId: string;
 

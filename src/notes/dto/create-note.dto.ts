@@ -1,11 +1,11 @@
-import { IsString, IsNotEmpty, IsNumber, Min, IsOptional } from 'class-validator';
+import { IsUUID, IsNotEmpty, IsNumber, Min, IsOptional, IsString } from 'class-validator';
 
 export class CreateNoteDto {
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   courseId: string;
 
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   lessonId: string;
 

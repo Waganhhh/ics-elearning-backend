@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Course } from '../../courses/entities/course.entity';
@@ -16,31 +17,34 @@ export class Note {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'studentId' })
   student: User;
 
+  @Index()
   @Column()
   studentId: string;
 
-  @ManyToOne(() => Course)
+  @ManyToOne(() => Course, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'courseId' })
   course: Course;
 
+  @Index()
   @Column()
   courseId: string;
 
-  @ManyToOne(() => Lesson)
+  @ManyToOne(() => Lesson, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'lessonId' })
   lesson: Lesson;
 
+  @Index()
   @Column()
   lessonId: string;
 
   @Column({ type: 'text' })
   content: string;
 
-  @Column({ default: 0 })
+  @Column({ type: 'int', default: 0 })
   timestamp: number; // Video timestamp in seconds
 
   @CreateDateColumn()

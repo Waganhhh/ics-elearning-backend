@@ -6,18 +6,22 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Course } from '../../courses/entities/course.entity';
 
 @Entity('cart')
+@Index(['userId', 'courseId'], { unique: true })
 export class Cart {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index()
   @Column({ name: 'user_id' })
   userId: string;
 
+  @Index()
   @Column({ name: 'course_id' })
   courseId: string;
 

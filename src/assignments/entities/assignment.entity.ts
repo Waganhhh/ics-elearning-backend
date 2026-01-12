@@ -6,6 +6,7 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Course } from '../../courses/entities/course.entity';
@@ -35,21 +36,26 @@ export class Assignment {
   @Column({ type: 'text' })
   description: string;
 
+  @Index()
   @Column({ name: 'course_id' })
   courseId: string;
 
+  @Index()
   @Column({ name: 'lesson_id', nullable: true })
   lessonId: string;
 
+  @Index()
   @Column({ name: 'created_by' })
   createdBy: string;
 
   @Column({ name: 'max_score', type: 'int', default: 100 })
   maxScore: number;
 
+  @Index()
   @Column({ name: 'due_date', type: 'timestamp', nullable: true })
   dueDate: Date;
 
+  @Index()
   @Column({ type: 'enum', enum: AssignmentStatus, default: AssignmentStatus.DRAFT })
   status: AssignmentStatus;
 

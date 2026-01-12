@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException, ConflictException, Logger, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Logger, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Payment, PaymentStatus } from './entities/payment.entity';
+import { Payment, PaymentStatus, PaymentMethod } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { User } from '../users/entities/user.entity';
-import { Course } from '../courses/entities/course.entity';
+import { Course, CourseStatus } from '../courses/entities/course.entity';
 import { Enrollment } from '../enrollments/entities/enrollment.entity';
 import { Lesson } from '../lessons/entities/lesson.entity';
 import { LessonProgress } from '../lesson-progress/entities/lesson-progress.entity';
@@ -36,6 +36,11 @@ export class PaymentsService {
       throw new NotFoundException('Khóa học không tìm thấy');
     }
 
+    // ✅ Validate course status
+    if (course.status !== CourseStatus.PUBLISHED) {
+      throw new BadRequestException('Khóa học không khả dụng');
+    }
+
     // Check if already enrolled
     const existingEnrollment = await this.enrollmentRepository.findOne({
       where: {
@@ -46,6 +51,16 @@ export class PaymentsService {
 
     if (existingEnrollment) {
       throw new ConflictException('Đã đăng ký khóa học này rồi');
+    }
+
+    // ✅ Calculate expected amount
+    const expectedAmount = course.discountPrice || course.price || 0;
+    
+    // ✅ Validate amount
+    if (createPaymentDto.amount !== expectedAmount) {
+      throw new BadRequestException(
+        `Số tiền không hợp lệ. Mong đợi: ${expectedAmount} VND, nhận được: ${createPaymentDto.amount} VND`
+      );
     }
 
     const transactionId = createPaymentDto.transactionId || this.generateTransactionId();
@@ -128,37 +143,53 @@ export class PaymentsService {
   }
 
   private async createEnrollmentForPayment(payment: Payment): Promise<void> {
-    const existingEnrollment = await this.enrollmentRepository.findOne({
-      where: {
-        studentId: payment.studentId,
-        courseId: payment.courseId,
-      },
-    });
+    // ✅ Sử dụng transaction với pessimistic lock để tránh race condition
+    try {
+      await this.enrollmentRepository.manager.transaction(async (manager) => {
+        const existing = await manager.findOne(Enrollment, {
+          where: {
+            studentId: payment.studentId,
+            courseId: payment.courseId,
+          },
+          lock: { mode: 'pessimistic_write' }, // Lock row
+        });
 
-    if (!existingEnrollment) {
-      const enrollment = this.enrollmentRepository.create({
-        studentId: payment.studentId,
-        courseId: payment.courseId,
+        if (existing) {
+          this.logger.log(`Enrollment already exists for student ${payment.studentId}`);
+          return;
+        }
+
+        const enrollment = manager.create(Enrollment, {
+          studentId: payment.studentId,
+          courseId: payment.courseId,
+        });
+        const savedEnrollment = await manager.save(Enrollment, enrollment);
+        
+        // Create lesson progress entries for all lessons in the course
+        const lessons = await manager.find(Lesson, {
+          where: { courseId: payment.courseId },
+        });
+
+        const progressEntries = lessons.map((lesson) =>
+          manager.create(LessonProgress, {
+            enrollmentId: savedEnrollment.id,
+            lessonId: lesson.id,
+          }),
+        );
+
+        if (progressEntries.length > 0) {
+          await manager.save(LessonProgress, progressEntries);
+        }
+        
+        this.logger.log(`Created enrollment for student ${payment.studentId} in course ${payment.courseId} with ${lessons.length} lessons`);
       });
-      const savedEnrollment = await this.enrollmentRepository.save(enrollment);
-      
-      // Create lesson progress entries for all lessons in the course
-      const lessons = await this.lessonRepository.find({
-        where: { courseId: payment.courseId },
-      });
-
-      const progressEntries = lessons.map((lesson) =>
-        this.lessonProgressRepository.create({
-          enrollmentId: savedEnrollment.id,
-          lessonId: lesson.id,
-        }),
-      );
-
-      if (progressEntries.length > 0) {
-        await this.lessonProgressRepository.save(progressEntries);
+    } catch (error) {
+      // ✅ Handle duplicate key error gracefully
+      if (error.code === '23505') { // PostgreSQL unique violation
+        this.logger.log(`Duplicate enrollment prevented for student ${payment.studentId}`);
+        return;
       }
-      
-      this.logger.log(`Created enrollment for student ${payment.studentId} in course ${payment.courseId} with ${lessons.length} lessons`);
+      throw error;
     }
   }
 

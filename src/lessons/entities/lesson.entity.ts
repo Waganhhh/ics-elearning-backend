@@ -7,6 +7,7 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Course } from '../../courses/entities/course.entity';
 import { LessonProgress } from '../../lesson-progress/entities/lesson-progress.entity';
@@ -43,7 +44,7 @@ export class Lesson {
   @Column({ nullable: true })
   videoThumbnail: string;
 
-  @Column({ default: 0 })
+  @Column({ type: 'int', default: 0 })
   duration: number; // in seconds
 
   @Column({ type: 'text', nullable: true })
@@ -66,6 +67,7 @@ export class Lesson {
   course: Course;
 
   @Column()
+  @Index()
   courseId: string;
 
   @OneToMany(() => LessonProgress, (progress) => progress.lesson)

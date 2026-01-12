@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Exam } from './exam.entity';
 import { User } from '../../users/entities/user.entity';
@@ -32,6 +33,7 @@ export class ExamAttempt {
   @JoinColumn({ name: 'examId' })
   exam: Exam;
 
+  @Index()
   @Column()
   examId: string;
 
@@ -39,6 +41,7 @@ export class ExamAttempt {
   @JoinColumn({ name: 'studentId' })
   student: User;
 
+  @Index()
   @Column()
   studentId: string;
 
@@ -54,6 +57,7 @@ export class ExamAttempt {
   @Column({ type: 'float', default: 0 })
   totalPoints: number;
 
+  @Index()
   @Column({
     type: 'enum',
     enum: AttemptStatus,
@@ -76,7 +80,7 @@ export class ExamAttempt {
   @Column({ type: 'timestamp', nullable: true })
   completedAt: Date;
 
-  @Column({ default: 0 })
+  @Column({ type: 'int', default: 0 })
   timeSpent: number;
 
   @CreateDateColumn()

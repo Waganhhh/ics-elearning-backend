@@ -6,27 +6,31 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Course } from '../../courses/entities/course.entity';
 
 @Entity('reviews')
+@Index(['studentId', 'courseId'], { unique: true })
 export class Review {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'studentId' })
   student: User;
 
   @Column()
+  @Index()
   studentId: string;
 
-  @ManyToOne(() => Course, (course) => course.reviews)
+  @ManyToOne(() => Course, (course) => course.reviews, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'courseId' })
   course: Course;
 
   @Column()
+  @Index()
   courseId: string;
 
   @Column({ type: 'int' })

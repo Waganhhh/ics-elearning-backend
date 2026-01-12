@@ -7,6 +7,7 @@ import {
   ManyToOne,
   OneToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Course } from '../../courses/entities/course.entity';
@@ -27,6 +28,8 @@ export enum PaymentMethod {
   BANK_TRANSFER = 'bank_transfer',
   WALLET = 'wallet',
   QR_CODE = 'qr_code',
+  VNPAY = 'vnpay',
+  MOMO = 'momo',
 }
 
 @Entity('payments')
@@ -37,18 +40,20 @@ export class Payment {
   @Column({ unique: true })
   transactionId: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'studentId' })
   student: User;
 
-  @Column()
+  @Column({ nullable: true })
+  @Index()
   studentId: string;
 
-  @ManyToOne(() => Course)
+  @ManyToOne(() => Course, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'courseId' })
   course: Course;
 
-  @Column()
+  @Column({ nullable: true })
+  @Index()
   courseId: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
@@ -68,10 +73,15 @@ export class Payment {
     enum: PaymentStatus,
     default: PaymentStatus.PENDING,
   })
+  @Index()
   status: PaymentStatus;
 
-  @Column({ default: 'bank_transfer' })
-  paymentMethod: string;
+  @Column({
+    type: 'enum',
+    enum: PaymentMethod,
+    default: PaymentMethod.BANK_TRANSFER,
+  })
+  paymentMethod: PaymentMethod;
 
   @Column({ nullable: true })
   paymentGatewayId: string; // ID from payment gateway (VNPay, Momo, etc.)

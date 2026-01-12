@@ -8,6 +8,7 @@ import {
   OneToMany,
   JoinColumn,
   OneToOne,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Course } from '../../courses/entities/course.entity';
@@ -22,22 +23,25 @@ export enum EnrollmentStatus {
 }
 
 @Entity('enrollments')
+@Index(['studentId', 'courseId'], { unique: true })
 export class Enrollment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (user) => user.enrollments)
+  @ManyToOne(() => User, (user) => user.enrollments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'studentId' })
   student: User;
 
   @Column()
+  @Index()
   studentId: string;
 
-  @ManyToOne(() => Course, (course) => course.enrollments)
+  @ManyToOne(() => Course, (course) => course.enrollments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'courseId' })
   course: Course;
 
   @Column()
+  @Index()
   courseId: string;
 
   @Column({
@@ -45,6 +49,7 @@ export class Enrollment {
     enum: EnrollmentStatus,
     default: EnrollmentStatus.ACTIVE,
   })
+  @Index()
   status: EnrollmentStatus;
 
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })

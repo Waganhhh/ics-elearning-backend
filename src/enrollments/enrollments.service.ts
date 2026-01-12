@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -10,7 +11,7 @@ import { Enrollment, EnrollmentStatus } from './entities/enrollment.entity';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
 import { User } from '../users/entities/user.entity';
-import { Course } from '../courses/entities/course.entity';
+import { Course, CourseStatus } from '../courses/entities/course.entity';
 import { Lesson } from '../lessons/entities/lesson.entity';
 import { LessonProgress } from '../lesson-progress/entities/lesson-progress.entity';
 import { CoursesService } from '../courses/courses.service';
@@ -36,6 +37,21 @@ export class EnrollmentsService {
 
     if (!course) {
       throw new NotFoundException('Khóa học không tìm thấy');
+    }
+
+    // ✅ Check course status
+    if (course.status !== CourseStatus.PUBLISHED) {
+      throw new BadRequestException(
+        'Khóa học chưa được công bố hoặc không còn khả dụng'
+      );
+    }
+
+    // ✅ Check if paid course
+    const finalPrice = course.discountPrice || course.price || 0;
+    if (finalPrice > 0) {
+      throw new BadRequestException(
+        'Khóa học có phí, vui lòng thanh toán trước khi đăng ký'
+      );
     }
 
     // Check if already enrolled

@@ -7,12 +7,14 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Course } from '../../courses/entities/course.entity';
 import { Lesson } from '../../lessons/entities/lesson.entity';
 
 @Entity('discussions')
+@Index(['courseId', 'lessonId'])
 export class Discussion {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -23,15 +25,19 @@ export class Discussion {
   @Column({ type: 'text' })
   content: string;
 
+  @Index()
   @Column({ name: 'course_id' })
   courseId: string;
 
+  @Index()
   @Column({ name: 'lesson_id', nullable: true })
   lessonId: string;
 
+  @Index()
   @Column({ name: 'author_id' })
   authorId: string;
 
+  @Index()
   @Column({ name: 'parent_id', nullable: true })
   parentId: string;
 

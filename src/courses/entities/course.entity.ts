@@ -7,6 +7,7 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Category } from '../../categories/entities/category.entity';
@@ -26,6 +27,7 @@ export enum CourseStatus {
   DRAFT = 'draft',
   PENDING = 'pending',
   PUBLISHED = 'published',
+  REJECTED = 'rejected',
   ARCHIVED = 'archived',
 }
 
@@ -70,12 +72,13 @@ export class Course {
     enum: CourseStatus,
     default: CourseStatus.DRAFT,
   })
+  @Index()
   status: CourseStatus;
 
   @Column({ type: 'text', nullable: true })
   rejectionReason: string;
 
-  @Column({ default: 0 })
+  @Column({ type: 'int', default: 0 })
   duration: number; // in minutes
 
   @Column({ type: 'simple-array', nullable: true })
@@ -97,23 +100,27 @@ export class Course {
   reviewCount: number;
 
   @Column({ default: false })
+  @Index()
   isFeatured: boolean;
 
   @Column({ default: false })
+  @Index()
   isBestseller: boolean;
 
-  @ManyToOne(() => User, (user) => user.courses)
+  @ManyToOne(() => User, (user) => user.courses, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'teacherId' })
   teacher: User;
 
-  @Column()
+  @Column({ nullable: true })
+  @Index()
   teacherId: string;
 
-  @ManyToOne(() => Category, (category) => category.courses)
+  @ManyToOne(() => Category, (category) => category.courses, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'categoryId' })
   category: Category;
 
   @Column({ nullable: true })
+  @Index()
   categoryId: string;
 
   @OneToMany(() => Lesson, (lesson) => lesson.course)

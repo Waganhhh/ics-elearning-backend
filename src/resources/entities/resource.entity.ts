@@ -6,6 +6,7 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { Course } from '../../courses/entities/course.entity';
 import { Lesson } from '../../lessons/entities/lesson.entity';
@@ -43,12 +44,15 @@ export class Resource {
   @Column({ name: 'file_size', type: 'bigint', nullable: true })
   fileSize: number;
 
+  @Index()
   @Column({ name: 'course_id' })
   courseId: string;
 
+  @Index()
   @Column({ name: 'lesson_id', nullable: true })
   lessonId: string;
 
+  @Index()
   @Column({ name: 'uploaded_by' })
   uploadedBy: string;
 

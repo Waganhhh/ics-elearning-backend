@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   BeforeInsert,
   OneToMany,
+  Index,
 } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 
@@ -46,6 +47,7 @@ export class User {
     enum: UserRole,
     default: UserRole.STUDENT,
   })
+  @Index()
   role: UserRole;
 
   @Column({
@@ -53,6 +55,7 @@ export class User {
     enum: UserStatus,
     default: UserStatus.PENDING,
   })
+  @Index()
   status: UserStatus;
 
   @Column({ nullable: true })
@@ -85,11 +88,39 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  // Relationships
   @OneToMany('Course', (course: any) => course.teacher)
   courses: any[];
 
   @OneToMany('Enrollment', (enrollment: any) => enrollment.student)
   enrollments: any[];
+
+  @OneToMany('Review', (review: any) => review.student)
+  reviews: any[];
+
+  @OneToMany('Wishlist', (wishlist: any) => wishlist.student)
+  wishlists: any[];
+
+  @OneToMany('Payment', (payment: any) => payment.student)
+  payments: any[];
+
+  @OneToMany('Note', (note: any) => note.student)
+  notes: any[];
+
+  @OneToMany('Notification', (notification: any) => notification.user)
+  notifications: any[];
+
+  @OneToMany('Cart', (cart: any) => cart.user)
+  cartItems: any[];
+
+  @OneToMany('UserSession', (session: any) => session.user)
+  sessions: any[];
+
+  @OneToMany('QuizAttempt', (attempt: any) => attempt.student)
+  quizAttempts: any[];
+
+  @OneToMany('ExamAttempt', (attempt: any) => attempt.student)
+  examAttempts: any[];
 
   @BeforeInsert()
   async hashPassword() {

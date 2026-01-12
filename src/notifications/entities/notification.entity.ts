@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
@@ -32,6 +33,7 @@ export enum NotificationStatus {
 }
 
 @Entity('notifications')
+@Index(['userId', 'status'])
 export class Notification {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -40,6 +42,7 @@ export class Notification {
   @JoinColumn({ name: 'userId' })
   user: User;
 
+  @Index()
   @Column()
   userId: string;
 
@@ -61,6 +64,7 @@ export class Notification {
   @Column({ type: 'simple-json', nullable: true })
   metadata: Record<string, any>; // Additional data
 
+  @Index()
   @Column({
     type: 'enum',
     enum: NotificationStatus,

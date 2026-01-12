@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Quiz } from './quiz.entity';
@@ -21,17 +22,19 @@ export class QuizAttempt {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'studentId' })
   student: User;
 
+  @Index()
   @Column()
   studentId: string;
 
-  @ManyToOne(() => Quiz, (quiz) => quiz.attempts)
+  @ManyToOne(() => Quiz, (quiz) => quiz.attempts, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'quizId' })
   quiz: Quiz;
 
+  @Index()
   @Column()
   quizId: string;
 
@@ -44,6 +47,7 @@ export class QuizAttempt {
   @Column({ default: false })
   passed: boolean;
 
+  @Index()
   @Column({
     type: 'enum',
     enum: AttemptStatus,
@@ -57,7 +61,7 @@ export class QuizAttempt {
   @Column({ type: 'timestamp', nullable: true })
   completedAt: Date;
 
-  @Column({ default: 0 })
+  @Column({ type: 'int', default: 0 })
   timeSpent: number; // in seconds
 
   @CreateDateColumn()

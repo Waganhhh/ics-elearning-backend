@@ -189,13 +189,13 @@ export class CoursesService {
 
   async approveCourse(id: string): Promise<Course> {
     const course = await this.findOne(id);
-    course.status = 'published' as any;
+    course.status = CourseStatus.PUBLISHED;
     return this.courseRepository.save(course);
   }
 
   async rejectCourse(id: string, reason: string): Promise<Course> {
     const course = await this.findOne(id);
-    course.status = 'rejected' as any;
+    course.status = CourseStatus.REJECTED;
     course.rejectionReason = reason;
     return this.courseRepository.save(course);
   }
@@ -207,7 +207,7 @@ export class CoursesService {
       throw new ForbiddenException('Bạn chỉ có thể gửi khóa học của bạn');
     }
 
-    course.status = 'pending' as any;
+    course.status = CourseStatus.PENDING;
     return this.courseRepository.save(course);
   }
 

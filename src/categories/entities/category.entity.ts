@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  Index,
 } from 'typeorm';
 import { Course } from '../../courses/entities/course.entity';
 
@@ -28,9 +29,11 @@ export class Category {
   @Column({ nullable: true })
   image: string;
 
+  @Index()
   @Column({ default: 0 })
   order: number;
 
+  @Index()
   @Column({ default: true })
   isActive: boolean;
 

@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import { Enrollment } from '../enrollments/entities/enrollment.entity';
 import { LessonProgress } from '../lesson-progress/entities/lesson-progress.entity';
-import { Certificate } from '../certificates/entities/certificate.entity';
+import { Certificate, CertificateStatus } from '../certificates/entities/certificate.entity';
 import { Lesson } from '../lessons/entities/lesson.entity';
 import { 
   ProgressOverview, 
@@ -39,7 +39,7 @@ export class ProgressService {
       : 0;
 
     const certificatesEarned = await this.certificateRepo.count({
-      where: { studentId, status: 'approved' },
+      where: { studentId, status: CertificateStatus.APPROVED },
     });
 
     // Calculate streaks (simplified - would need proper activity tracking)

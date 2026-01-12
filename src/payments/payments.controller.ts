@@ -15,6 +15,7 @@ import {
 import type { Request, Response } from 'express';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { PaymentMethod } from './entities/payment.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -184,7 +185,7 @@ export class PaymentsController {
       {
         courseId: body.courseId,
         amount: body.amount,
-        paymentMethod: 'vnpay',
+        paymentMethod: PaymentMethod.VNPAY,
         transactionId: orderId,
       },
       user,
@@ -279,7 +280,7 @@ export class PaymentsController {
       {
         courseId: body.courseId,
         amount: body.amount,
-        paymentMethod: 'momo',
+        paymentMethod: PaymentMethod.MOMO,
         transactionId: orderId,
       },
       user,

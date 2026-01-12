@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Certificate } from './entities/certificate.entity';
+import { Certificate, CertificateStatus } from './entities/certificate.entity';
 import { User } from '../users/entities/user.entity';
 import { Enrollment, EnrollmentStatus } from '../enrollments/entities/enrollment.entity';
 
@@ -99,7 +99,7 @@ export class CertificatesService {
 
   async findPending() {
     return this.certificateRepository.find({
-      where: { status: 'pending' },
+      where: { status: CertificateStatus.PENDING },
       relations: ['student', 'course', 'enrollment'],
       order: { createdAt: 'DESC' },
     });
@@ -107,13 +107,13 @@ export class CertificatesService {
 
   async approveCertificate(id: string) {
     const certificate = await this.findOne(id);
-    certificate.status = 'approved';
+    certificate.status = CertificateStatus.APPROVED;
     return this.certificateRepository.save(certificate);
   }
 
   async rejectCertificate(id: string, reason: string) {
     const certificate = await this.findOne(id);
-    certificate.status = 'rejected';
+    certificate.status = CertificateStatus.REJECTED;
     certificate.rejectionReason = reason;
     return this.certificateRepository.save(certificate);
   }

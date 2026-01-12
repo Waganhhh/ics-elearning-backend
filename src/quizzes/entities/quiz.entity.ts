@@ -7,6 +7,7 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Course } from '../../courses/entities/course.entity';
 import { Lesson } from '../../lessons/entities/lesson.entity';
@@ -26,7 +27,7 @@ export class Quiz {
   @Column({ type: 'simple-json' })
   questions: any[]; // Array of question objects
 
-  @Column({ default: 60 })
+  @Column({ type: 'int', default: 60 })
   timeLimit: number; // in minutes
 
   @Column({ default: 70 })
@@ -41,17 +42,19 @@ export class Quiz {
   @Column({ default: false })
   shuffleQuestions: boolean;
 
-  @ManyToOne(() => Course)
+  @ManyToOne(() => Course, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'courseId' })
   course: Course;
 
+  @Index()
   @Column()
   courseId: string;
 
-  @ManyToOne(() => Lesson)
+  @ManyToOne(() => Lesson, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'lessonId' })
   lesson: Lesson;
 
+  @Index()
   @Column({ nullable: true })
   lessonId: string;
 
